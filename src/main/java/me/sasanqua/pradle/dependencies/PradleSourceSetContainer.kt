@@ -1,4 +1,4 @@
-package me.sasanqua.pradle
+package me.sasanqua.pradle.dependencies
 
 import org.gradle.api.NamedDomainObjectContainer
 import org.gradle.api.NamedDomainObjectProvider

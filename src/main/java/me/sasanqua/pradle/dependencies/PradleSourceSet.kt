@@ -1,4 +1,4 @@
-package me.sasanqua.pradle
+package me.sasanqua.pradle.dependencies
 
 import org.gradle.api.file.SourceDirectorySet
 import java.nio.file.Path

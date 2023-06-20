@@ -1,6 +1,7 @@
 package me.sasanqua.pradle
 
-import me.sasanqua.pradle.default.DefaultPradleExtension
+import me.sasanqua.pradle.dependencies.PradleSourceSet
+import me.sasanqua.pradle.internal.DefaultPradleExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
