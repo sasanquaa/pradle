@@ -2,6 +2,8 @@ package me.sasanqua.pradle
 
 import me.sasanqua.pradle.dependencies.PradleSourceSet
 import me.sasanqua.pradle.internal.DefaultPradleExtension
+import me.sasanqua.pradle.tasks.SetupPythonEnvironmentTask
+import me.sasanqua.pradle.tasks.VerifyPythonTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
@@ -9,6 +11,7 @@ import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.plugins.ide.idea.model.IdeaModel
+import java.io.File
 import kotlin.io.path.Path
 
 class PradlePlugin : Plugin<Project> {
@@ -16,10 +19,16 @@ class PradlePlugin : Plugin<Project> {
         applyExtension()
         applyDefaultSourceSets()
         applyOptionalPlugins()
+        applyTasks()
     }
 
     private fun Project.applyExtension() {
-        extensions.create(PradleExtension::class, PradleExtension.NAME, DefaultPradleExtension::class, objects)
+        extensions.create(
+            PradleExtension::class,
+            PradleExtension.NAME,
+            DefaultPradleExtension::class,
+            this
+        )
     }
 
     private fun Project.applyDefaultSourceSets() {
@@ -49,11 +58,16 @@ class PradlePlugin : Plugin<Project> {
             javaSourceSet.extensions.add(sourceName, pradleSourceSet)
         }
 
-        ideaExtension?.module?.sourceDirs?.let { sourceDirs ->
-            pradleExtension.sourceSets.flatMap { it.python.srcDirs }.forEach(sourceDirs::add)
+        ideaExtension?.module?.let { module ->
+            pradleExtension.sourceSets.flatMap { it.python.srcDirs }.forEach(module.sourceDirs::add)
+            pradleExtension.sourceSets.flatMap { it.resources.srcDirs }.forEach(module.resourceDirs::add)
         }
-        ideaExtension?.module?.resourceDirs?.let { resourceDirs ->
-            pradleExtension.sourceSets.flatMap { it.resources.srcDirs }.forEach(resourceDirs::add)
+    }
+
+    private fun Project.applyTasks() {
+        val verifyTask = tasks.create<VerifyPythonTask>(VerifyPythonTask.NAME)
+        tasks.create<SetupPythonEnvironmentTask>(SetupPythonEnvironmentTask.NAME) {
+            inputExecutable.value(verifyTask.outputExecutable.asFile.map(File::readText))
         }
     }
 }

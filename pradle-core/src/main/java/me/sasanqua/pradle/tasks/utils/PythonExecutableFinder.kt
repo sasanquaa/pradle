@@ -1,4 +1,4 @@
-package me.sasanqua.pradle.environment
+package me.sasanqua.pradle.tasks.utils
 
 import java.io.File
 
@@ -10,8 +10,13 @@ object PythonExecutableFinder {
     } else {
         "python"
     }
+    private val EXECUTABLE_DIR = if (OS_NAME.contains("windows", true)) {
+        "Scripts"
+    } else {
+        "bin"
+    }
 
-    fun find(): File? {
+    fun findFromPath(): File? {
         val directories = findDirectoriesFromPath()
         for (dir in directories) {
             val file = File(dir, EXECUTABLE)
@@ -21,6 +26,8 @@ object PythonExecutableFinder {
         }
         return null
     }
+
+    fun findFromVirtualEnvironment(venv: File): File = venv.resolve(EXECUTABLE_DIR).resolve(EXECUTABLE)
 
     private fun findDirectoriesFromPath(): List<File> {
         val path = System.getenv().firstNotNullOfOrNull { (name, paths) ->

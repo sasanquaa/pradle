@@ -5,6 +5,7 @@ import java.nio.file.Path
 import kotlin.io.path.Path
 
 interface PradleSourceSet {
+    val name: String
     val python: SourceDirectorySet
     val resources: SourceDirectorySet
 
