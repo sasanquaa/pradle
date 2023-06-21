@@ -8,5 +8,8 @@ data class DefaultPradleDependency /*private constructor*/(
 ) : PradleDependency {
     object Factory {
         fun create(name: String, version: String?) = DefaultPradleDependency(name, version)
+
+        fun from(dependency: PradleDependency) =
+            dependency as? DefaultPradleDependency ?: create(dependency.name, dependency.version)
     }
 }

@@ -2,6 +2,7 @@ package me.sasanqua.pradle
 
 import me.sasanqua.pradle.dependencies.PradleSourceSet
 import me.sasanqua.pradle.internal.DefaultPradleExtension
+import me.sasanqua.pradle.tasks.PackagePexTask
 import me.sasanqua.pradle.tasks.SetupPythonEnvironmentTask
 import me.sasanqua.pradle.tasks.VerifyPythonTask
 import org.gradle.api.Plugin
@@ -58,16 +59,19 @@ class PradlePlugin : Plugin<Project> {
             javaSourceSet.extensions.add(sourceName, pradleSourceSet)
         }
 
-        ideaExtension?.module?.let { module ->
-            pradleExtension.sourceSets.flatMap { it.python.srcDirs }.forEach(module.sourceDirs::add)
-            pradleExtension.sourceSets.flatMap { it.resources.srcDirs }.forEach(module.resourceDirs::add)
+        ideaExtension?.module {
+            pradleExtension.sourceSets.flatMap { it.python.srcDirs }.forEach(sourceDirs::add)
+            pradleExtension.sourceSets.flatMap { it.resources.srcDirs }.forEach(resourceDirs::add)
         }
     }
 
     private fun Project.applyTasks() {
         val verifyTask = tasks.create<VerifyPythonTask>(VerifyPythonTask.NAME)
-        tasks.create<SetupPythonEnvironmentTask>(SetupPythonEnvironmentTask.NAME) {
+        val environmentTask = tasks.create<SetupPythonEnvironmentTask>(SetupPythonEnvironmentTask.NAME) {
             inputExecutable.value(verifyTask.outputExecutable.asFile.map(File::readText))
+        }
+        tasks.create<PackagePexTask>(PackagePexTask.NAME) {
+            inputExecutable.value(environmentTask.outputExecutable.asFile.map(File::readText))
         }
     }
 }

@@ -5,6 +5,7 @@ plugins {
 pradle {
     dependencies {
         pip("numpy")
-        pip("pywinauto")
+        pip("scipy")
+        pip("pandas")
     }
 }

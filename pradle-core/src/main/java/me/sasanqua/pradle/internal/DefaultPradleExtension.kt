@@ -10,6 +10,7 @@ import org.gradle.api.Project
 open class DefaultPradleExtension(project: Project) : PradleExtension {
     override val sourceSets: PradleSourceSetContainer = DefaultPradleSourceSetContainer.Factory.create(project.objects)
     override val dependencies: MutableSet<PradleDependency> = mutableSetOf()
+    override var version: String = "3.3"
 
     override fun sourceSets(action: Action<PradleSourceSetContainer>) = action.execute(sourceSets)
 

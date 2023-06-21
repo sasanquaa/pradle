@@ -8,6 +8,7 @@ import org.gradle.api.Action
 interface PradleExtension {
     val sourceSets: PradleSourceSetContainer
     val dependencies: Set<PradleDependency>
+    var version: String
 
     fun sourceSets(action: Action<PradleSourceSetContainer>)
 
