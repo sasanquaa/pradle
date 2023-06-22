@@ -2,7 +2,8 @@ package me.sasanqua.pradle
 
 import me.sasanqua.pradle.dependencies.PradleSourceSet
 import me.sasanqua.pradle.internal.DefaultPradleExtension
-import me.sasanqua.pradle.tasks.PackagePexTask
+import me.sasanqua.pradle.tasks.ExecuteZipAppTask
+import me.sasanqua.pradle.tasks.PackageZipAppTask
 import me.sasanqua.pradle.tasks.SetupPythonEnvironmentTask
 import me.sasanqua.pradle.tasks.VerifyPythonTask
 import org.gradle.api.Plugin
@@ -70,8 +71,12 @@ class PradlePlugin : Plugin<Project> {
         val environmentTask = tasks.create<SetupPythonEnvironmentTask>(SetupPythonEnvironmentTask.NAME) {
             inputExecutable.value(verifyTask.outputExecutable.asFile.map(File::readText))
         }
-        tasks.create<PackagePexTask>(PackagePexTask.NAME) {
+        val packageTask = tasks.create<PackageZipAppTask>(PackageZipAppTask.NAME) {
             inputExecutable.value(environmentTask.outputExecutable.asFile.map(File::readText))
+        }
+        tasks.create<ExecuteZipAppTask>(ExecuteZipAppTask.NAME) {
+            inputExecutable.value(packageTask.outputExecutable.asFile.map(File::readText))
+            inputZipApp.value(packageTask.outputZipApp.asFile.map(File::readText))
         }
     }
 }

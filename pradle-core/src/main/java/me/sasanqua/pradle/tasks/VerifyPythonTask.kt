@@ -1,9 +1,13 @@
 package me.sasanqua.pradle.tasks
 
 import me.sasanqua.pradle.PradleExtension
+import me.sasanqua.pradle.PradleExtension.Companion.MIN_PYTHON_VERSION
+import me.sasanqua.pradle.PradleExtension.Companion.MIN_PYTHON_VERSION_MAJOR
+import me.sasanqua.pradle.PradleExtension.Companion.MIN_PYTHON_VERSION_MINOR
 import me.sasanqua.pradle.tasks.utils.PythonExecutableFinder
-import me.sasanqua.pradle.tasks.utils.checkVenvCommand
-import me.sasanqua.pradle.tasks.utils.getVersionCommand
+import me.sasanqua.pradle.tasks.utils.VENV
+import me.sasanqua.pradle.tasks.utils.checkPackageCommand
+import me.sasanqua.pradle.tasks.utils.getPythonVersionCommand
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -33,14 +37,16 @@ open class VerifyPythonTask : DefaultTask() {
     private fun verifyPythonVersion(executable: String, version: String) {
         val split = version.split(".")
         val major = checkNotNull(split.elementAtOrNull(0)) { "Python major version missing" }.toInt()
-        val minor = split.elementAtOrNull(1)?.toInt() ?: 3
+        val minor = split.elementAtOrNull(1)?.toInt() ?: MIN_PYTHON_VERSION_MINOR
         val patch = split.elementAtOrNull(2)?.toInt() ?: 0
         val outputStream = ByteArrayOutputStream()
 
-        check(major >= 3 && minor >= 3) { "Only python 3.3 and above are supported" }
+        check(major >= MIN_PYTHON_VERSION_MAJOR && minor >= MIN_PYTHON_VERSION_MINOR) {
+            "Only python $MIN_PYTHON_VERSION and above are supported"
+        }
 
         project.exec {
-            commandLine = getVersionCommand(executable)
+            commandLine = getPythonVersionCommand(executable)
             standardOutput = outputStream
         }
 
@@ -56,7 +62,7 @@ open class VerifyPythonTask : DefaultTask() {
 
     private fun verifyVenvAvailable(executable: String) {
         val result = project.exec {
-            commandLine = checkVenvCommand(executable)
+            commandLine = checkPackageCommand(executable, VENV)
             isIgnoreExitValue = true
         }
         check(result.exitValue == 0) { "Package venv not found" }

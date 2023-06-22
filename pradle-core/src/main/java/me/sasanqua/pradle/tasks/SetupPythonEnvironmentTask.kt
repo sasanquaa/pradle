@@ -18,7 +18,7 @@ import me.sasanqua.pradle.internal.DefaultPradleDependency.Factory as PradleDepe
 
 open class SetupPythonEnvironmentTask : DefaultTask() {
     private val outputExecutableDefault: File by lazy {
-        File.createTempFile("python_executable", null)
+        File.createTempFile("virtual_python_executable", null)
     }
 
     @Input
@@ -40,7 +40,7 @@ open class SetupPythonEnvironmentTask : DefaultTask() {
         outputExecutable.get().asFile.writeText(virtualExecutable)
     }
 
-    private fun setupVenvFile() = project.buildDir.resolve(VENV).resolve(project.name)
+    private fun setupVenvFile() = project.buildDir.resolve(VENV)
 
     private fun setupEnvironment(executable: String, venv: File): String {
         project.exec {
