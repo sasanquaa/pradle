@@ -14,3 +14,9 @@ gradlePlugin {
         }
     }
 }
+
+fun createService(service: File, interfaceClass: String, implementationClass: String) {
+    val extension = service.resolve(interfaceClass)
+    extension.createNewFile()
+    extension.writeText(implementationClass)
+}

@@ -1,6 +1,7 @@
 package me.sasanqua.pradle.tasks
 
 import me.sasanqua.pradle.PradleExtension
+import me.sasanqua.pradle.PradleObjectFactory
 import me.sasanqua.pradle.dependencies.PradleDependency
 import me.sasanqua.pradle.dependencies.PradleDependency.Companion.PIP_SEPARATOR
 import me.sasanqua.pradle.tasks.utils.PythonExecutableFinder
@@ -9,35 +10,32 @@ import me.sasanqua.pradle.tasks.utils.pipUninstallRequirementsCommand
 import me.sasanqua.pradle.tasks.utils.venvCommand
 import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.property
 import java.io.File
-import me.sasanqua.pradle.internal.DefaultPradleDependency.Factory as PradleDependencyFactory
+import javax.inject.Inject
 
-open class SetupPythonEnvironmentTask : DefaultTask() {
-    private val outputExecutableDefault: File by lazy {
-        File.createTempFile("virtual_python_executable", null)
-    }
-
+open class SetupPythonEnvironmentTask @Inject constructor(private val objectFactory: PradleObjectFactory) :
+    DefaultTask() {
     @Input
-    val inputExecutable = project.objects.property<String>()
+    val executable = project.objects.property<String>()
 
-    @OutputFile
-    val outputExecutable = project.objects.fileProperty().convention { outputExecutableDefault }
+    @Internal
+    val virtualExecutable = project.objects.property<String>()
 
     @TaskAction
     fun setup() {
-        val executable = inputExecutable.get()
+        val executablePath = executable.get()
         val dependencies = project.extensions.getByType<PradleExtension>().dependencies
         val venv = setupVenvFile()
         val requirements = venv.resolve(REQUIREMENTS).apply { createNewFile() }
 
-        val virtualExecutable = setupEnvironment(executable, venv)
+        val virtualExecutablePath = setupEnvironment(executablePath, venv)
         val unusedRequirements = setupRequirements(requirements, dependencies)
-        setupDependencies(virtualExecutable, requirements, unusedRequirements)
-        outputExecutable.get().asFile.writeText(virtualExecutable)
+        setupDependencies(virtualExecutablePath, requirements, unusedRequirements)
+        virtualExecutable.set(virtualExecutablePath)
     }
 
     private fun setupVenvFile() = project.buildDir.resolve(VENV)
@@ -50,12 +48,10 @@ open class SetupPythonEnvironmentTask : DefaultTask() {
     }
 
     private fun setupRequirements(requirements: File, dependencies: Set<PradleDependency>): File {
-        val newDependencies = dependencies.associate {
-            it.name to PradleDependencyFactory.from(it)
-        }.toMutableMap()
+        val newDependencies = dependencies.associateBy { it.name }.toMutableMap()
         val oldDependencies = requirements.readLines().associate {
             val split = it.split(PIP_SEPARATOR)
-            val dependency = PradleDependencyFactory.create(split[0], split.elementAtOrNull(1))
+            val dependency = objectFactory.dependency(split[0], split.elementAtOrNull(1))
             dependency.name to dependency
         }
         val intersectDependencies = oldDependencies.filterKeys { newDependencies.containsKey(it) }

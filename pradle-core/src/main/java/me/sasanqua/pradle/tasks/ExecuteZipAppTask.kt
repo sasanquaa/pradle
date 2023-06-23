@@ -8,15 +8,15 @@ import org.gradle.kotlin.dsl.property
 
 open class ExecuteZipAppTask : DefaultTask() {
     @Input
-    val inputExecutable = project.objects.property<String>()
+    val executable = project.objects.property<String>()
 
     @Input
-    val inputZipApp = project.objects.property<String>()
+    val executableApp = project.objects.property<String>()
 
     @TaskAction
     fun executeZipApp() {
-        val executable = inputExecutable.get()
-        val app = inputZipApp.get()
+        val executable = executable.get()
+        val app = executableApp.get()
         project.exec { commandLine = pythonCommand(executable, app) }
     }
 

@@ -1,22 +1,25 @@
 package me.sasanqua.pradle
 
 import me.sasanqua.pradle.dependencies.PradleSourceSet
-import me.sasanqua.pradle.internal.DefaultPradleExtension
 import me.sasanqua.pradle.tasks.ExecuteZipAppTask
 import me.sasanqua.pradle.tasks.PackageZipAppTask
 import me.sasanqua.pradle.tasks.SetupPythonEnvironmentTask
 import me.sasanqua.pradle.tasks.VerifyPythonTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.kotlin.dsl.add
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.getByType
 import org.gradle.plugins.ide.idea.model.IdeaModel
-import java.io.File
-import kotlin.io.path.Path
+import java.util.ServiceLoader
 
+@Suppress("unused")
 class PradlePlugin : Plugin<Project> {
+    private val objectFactory: PradleObjectFactory by lazy {
+        ServiceLoader.load(PradleObjectFactory::class.java).first()
+    }
+
     override fun apply(target: Project): Unit = with(target) {
         applyExtension()
         applyDefaultSourceSets()
@@ -25,11 +28,10 @@ class PradlePlugin : Plugin<Project> {
     }
 
     private fun Project.applyExtension() {
-        extensions.create(
+        extensions.add(
             PradleExtension::class,
             PradleExtension.NAME,
-            DefaultPradleExtension::class,
-            this
+            objectFactory.extension(project.objects)
         )
     }
 
@@ -48,35 +50,28 @@ class PradlePlugin : Plugin<Project> {
     private fun Project.applyOptionalPlugins() {
         val pradleExtension = extensions.getByType<PradleExtension>()
         val ideaExtension = extensions.findByType<IdeaModel>()
-        val javaExtension = extensions.findByType<JavaPluginExtension>()
-
-        javaExtension?.sourceSets?.forEach { javaSourceSet ->
-            val sourceSetName = javaSourceSet.name
-            val sourceName = "python"
-            val sourceDir = Path("src").resolve(sourceSetName).resolve(sourceName)
-            val pradleSourceSet = pradleExtension.sourceSets.maybeCreate(sourceSetName)
-            pradleSourceSet.python.srcDir(sourceDir)
-            pradleSourceSet.resources.srcDir(javaSourceSet.resources)
-            javaSourceSet.extensions.add(sourceName, pradleSourceSet)
-        }
 
         ideaExtension?.module {
-            pradleExtension.sourceSets.flatMap { it.python.srcDirs }.forEach(sourceDirs::add)
-            pradleExtension.sourceSets.flatMap { it.resources.srcDirs }.forEach(resourceDirs::add)
+            pradleExtension.sourceSets.main.map { it.python.srcDirs }.get().forEach(sourceDirs::add)
+            pradleExtension.sourceSets.main.map { it.resources.srcDirs }.get().forEach(resourceDirs::add)
         }
     }
 
     private fun Project.applyTasks() {
         val verifyTask = tasks.create<VerifyPythonTask>(VerifyPythonTask.NAME)
-        val environmentTask = tasks.create<SetupPythonEnvironmentTask>(SetupPythonEnvironmentTask.NAME) {
-            inputExecutable.value(verifyTask.outputExecutable.asFile.map(File::readText))
-        }
+        val environmentTask =
+            tasks.create<SetupPythonEnvironmentTask>(SetupPythonEnvironmentTask.NAME, objectFactory).apply {
+                dependsOn(verifyTask)
+                executable.value(verifyTask.executable)
+            }
         val packageTask = tasks.create<PackageZipAppTask>(PackageZipAppTask.NAME) {
-            inputExecutable.value(environmentTask.outputExecutable.asFile.map(File::readText))
+            dependsOn(environmentTask)
+            executable.value(environmentTask.virtualExecutable)
         }
         tasks.create<ExecuteZipAppTask>(ExecuteZipAppTask.NAME) {
-            inputExecutable.value(packageTask.outputExecutable.asFile.map(File::readText))
-            inputZipApp.value(packageTask.outputZipApp.asFile.map(File::readText))
+            dependsOn(packageTask)
+            executable.value(packageTask.executable)
+            executableApp.value(packageTask.executableApp)
         }
     }
 }

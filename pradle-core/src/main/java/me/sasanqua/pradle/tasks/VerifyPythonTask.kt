@@ -9,29 +9,25 @@ import me.sasanqua.pradle.tasks.utils.VENV
 import me.sasanqua.pradle.tasks.utils.checkPackageCommand
 import me.sasanqua.pradle.tasks.utils.getPythonVersionCommand
 import org.gradle.api.DefaultTask
-import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.property
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.io.StringReader
 
 open class VerifyPythonTask : DefaultTask() {
-    private val outputExecutableDefault: File by lazy {
-        File.createTempFile("python_executable", null)
-    }
-
-    @OutputFile
-    val outputExecutable = project.objects.fileProperty().convention { outputExecutableDefault }
+    @Internal
+    val executable = project.objects.property<String>()
 
     @TaskAction
-    fun verify() {
-        val executable =
+    private fun verify() {
+        val executablePath =
             checkNotNull(PythonExecutableFinder.findFromPath()?.absolutePath) { "Unable to find Python executable" }
         val pythonVersion = project.extensions.getByType<PradleExtension>().version
-        verifyPythonVersion(executable, pythonVersion)
-        verifyVenvAvailable(executable)
-        outputExecutable.get().asFile.writeText(executable)
+        verifyPythonVersion(executablePath, pythonVersion)
+        verifyVenvAvailable(executablePath)
+        executable.set(executablePath)
     }
 
     private fun verifyPythonVersion(executable: String, version: String) {
